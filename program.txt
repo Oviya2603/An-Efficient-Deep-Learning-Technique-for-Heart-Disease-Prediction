@@ -1,0 +1,85 @@
+import numpy as np
+import pandas as pd
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import StandardScaler
+from sklearn.metrics import confusion_matrix, accuracy_score
+from keras.models import Sequential
+from keras.layers import Dense, Dropout
+import matplotlib.pyplot as plt
+
+# Load the dataset
+df = pd.read_csv('heart.csv')
+
+# Handle missing values
+df = df.replace('?', np.nan)
+df = df.dropna()
+
+# Select features and target
+X = df.iloc[:, :-1].values
+y = df.iloc[:, -1].values
+
+# Binarize the target variable
+y = (y > 0).astype(int)
+
+# Split the dataset
+X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.2, random_state=42)
+
+# Feature scaling
+scaler = StandardScaler()
+X_train = scaler.fit_transform(X_train)
+X_test = scaler.transform(X_test)
+
+# Build the ANN model
+model = Sequential()
+
+# Input layer and first hidden layer with dropout
+model.add(Dense(units=32, activation='relu', input_dim=X_train.shape[1]))
+model.add(Dropout(0.2))
+
+# Second hidden layer with dropout
+model.add(Dense(units=16, activation='relu'))
+model.add(Dropout(0.2))
+
+# Third hidden layer with dropout
+model.add(Dense(units=8, activation='relu'))
+model.add(Dropout(0.2))
+
+# Output layer
+model.add(Dense(units=1, activation='sigmoid'))
+
+# Compile the model
+model.compile(optimizer='adam', loss='binary_crossentropy', metrics=['accuracy'])
+
+# Train the model
+history = model.fit(X_train, y_train, epochs=150, batch_size=10, validation_split=0.1)
+
+# Evaluate the model
+y_pred = (model.predict(X_test) > 0.5).astype(int)
+
+accuracy = accuracy_score(y_test, y_pred)
+cm = confusion_matrix(y_test, y_pred)
+
+
+print("Accuracy:")
+print("Confusion Matrix: \n", cm)
+
+# Plot training & validation accuracy values
+plt.figure(figsize=(12, 4))
+plt.subplot(1, 2, 1)
+plt.plot(history.history['accuracy'])
+plt.plot(history.history['val_accuracy'])
+plt.title('Model accuracy')
+plt.ylabel('Accuracy')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+
+# Plot training & validation loss values
+plt.subplot(1, 2, 2)
+plt.plot(history.history['loss'])
+plt.plot(history.history['val_loss'])
+plt.title('Model loss')
+plt.ylabel('Loss')
+plt.xlabel('Epoch')
+plt.legend(['Train', 'Validation'], loc='upper left')
+
+plt.show()
